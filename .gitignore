@@ -1,0 +1,13 @@
+*.user
+*.user.*
+*.aps
+build-*/
+extra/
+*.*-pre1
+*.autosave
+*.*~
+*.uxf
+*.pyc
+Thumbs.db
+ehthumbs.db
+Desktop.ini
