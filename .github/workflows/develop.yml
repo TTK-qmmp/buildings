@@ -1,0 +1,127 @@
+# Author: Greedysky <greedysky@163.com>
+
+name: qmmp-based-on-develop
+
+on: workflow_call
+
+env:
+  TTK_MODULE: TTKQmmp
+  TTK_VERSION: v1.0.1
+  
+jobs:
+  build:
+    name: Build on Qt${{matrix.qt_major}}(${{matrix.os}})
+    strategy:
+      matrix:
+        include:
+          - qt: qt6
+            os: ubuntu-22.04
+            qt_major: 6
+            qt_version: 6.2.4
+            qmmp_name: qmmp
+            qmmp_version: 2.4
+
+          - qt: qt6
+            os: ubuntu-24.04
+            qt_major: 6
+            qt_version: 6.4.2
+            qmmp_name: qmmp
+            qmmp_version: 2.4
+
+    runs-on: ${{matrix.os}}
+    steps:
+      - name: Clone qmmp module
+        uses: actions/checkout@v6
+
+      - name: Install SVN
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y subversion
+          svn --version
+
+      - name: Install Qt
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: ${{matrix.qt_version}}
+          target: desktop
+          cache: 'false'
+
+      - name: Install thirdParty dependencies
+        run: |
+          wget https://github.com/Greedysky/TTKMusicPlayer/releases/download/continuous-build/thirdParty-libraries-${{matrix.os}}-x64.7z -O thirdParty-libraries.7z
+          7z x thirdParty-libraries.7z
+          mkdir install
+          mv gcc install
+          # replace libADLMIDI pc
+          mv install/gcc/libadlmidi/lib/libADLMIDI_static.a install/gcc/libadlmidi/lib/libADLMIDI.a
+          sed -i "s/TTKMusicPlayer/buildings/g" install/gcc/libadlmidi/lib/pkgconfig/libADLMIDI.pc
+          # replace libbinio pc
+          mv install/gcc/libadplug/lib/libbinio_static.a install/gcc/libadplug/lib/libbinio.a
+          sed -i "s/TTKMusicPlayer/buildings/g" install/gcc/libadplug/lib/pkgconfig/libbinio.pc
+          # replace libadplug pc
+          mv install/gcc/libadplug/lib/libadplug_static.a install/gcc/libadplug/lib/libadplug.a
+          sed -i "s/TTKMusicPlayer/buildings/g" install/gcc/libadplug/lib/pkgconfig/adplug.pc
+          # replace libopenmpt pc
+          mv install/gcc/libopenmpt/lib/libopenmpt_static.a install/gcc/libopenmpt/lib/libopenmpt.a
+          sed -i "s/TTKMusicPlayer/buildings/g" install/gcc/libopenmpt/lib/pkgconfig/libopenmpt.pc
+          # replace liboptimfrog pc
+          sed -i "s/TTKMusicPlayer/buildings/g" install/gcc/liboptimfrog/lib/pkgconfig/optimfrog.pc
+        working-directory: ${{runner.workspace}}
+
+      - name: Build qmmp library
+        run: |
+          svn checkout https://svn.code.sf.net/p/qmmp-dev/code/trunk/qmmp/ ${{matrix.qmmp_name}}-${{matrix.qmmp_version}}
+          cd ${{matrix.qmmp_name}}-${{matrix.qmmp_version}}
+          sed -i "3,12d" src/plugins/plugins.pro
+          cmake . -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=${{runner.workspace}}/usr -DCMAKE_INSTALL_LIBDIR=lib/${{matrix.qmmp_name}} -DPLUGIN_DIR=lib/${{matrix.qmmp_name}}/plugins
+          make -j2 && make install
+          sed -i "10d" ${{runner.workspace}}/usr/lib/${{matrix.qmmp_name}}/pkgconfig/${{matrix.qmmp_name}}.pc
+          # remove old plugins
+          rm -rf ${{runner.workspace}}/usr/lib/${{matrix.qmmp_name}}/plugins
+        working-directory: ${{runner.workspace}}
+
+      - name: Clone TTKQmmp modules
+        run: |
+          python qmmp_ttk_clone.py
+        working-directory: ${{github.workspace}}/scripts
+
+      - name: Build TTKQmmp modules
+        run: |
+          export PKG_CONFIG_PATH=${{runner.workspace}}/install/gcc/libadlmidi/lib/pkgconfig:$PKG_CONFIG_PATH
+          export PKG_CONFIG_PATH=${{runner.workspace}}/install/gcc/libadplug/lib/pkgconfig:$PKG_CONFIG_PATH
+          export PKG_CONFIG_PATH=${{runner.workspace}}/install/gcc/libopenmpt/lib/pkgconfig:$PKG_CONFIG_PATH
+          export PKG_CONFIG_PATH=${{runner.workspace}}/install/gcc/liboptimfrog/lib/pkgconfig:$PKG_CONFIG_PATH
+          export PKG_CONFIG_PATH=${{runner.workspace}}/usr/lib/${{matrix.qmmp_name}}/pkgconfig:$PKG_CONFIG_PATH
+          python qmmp_ttk_build_git.py
+          bash build.sh
+        working-directory: ${{github.workspace}}/scripts
+
+      - name: Build TTKQmmp packages
+        run: |
+          # clean up directories
+          rm -rf bin include share
+          # clean up
+          cd lib/${{matrix.qmmp_name}}
+          rm libqmmp*
+          rm -rf pkgconfig
+          # add portable binary package
+          cd ${{runner.workspace}}
+          mv usr ${{env.TTK_MODULE}}
+          mkdir ${{env.TTK_MODULE}}/ext
+          cp install/gcc/liboptimfrog/lib/libOptimFROG.so.0 ${{env.TTK_MODULE}}/ext
+          cp install/gcc/libsunvox/sunvox.so ${{env.TTK_MODULE}}/lib/${{matrix.qmmp_name}}
+          cp -rf /home/runner/work/qmmp-ttk/Visual/sonique/svps/linux_x64/sonique ${{env.TTK_MODULE}}/ext
+          # copy scripts
+          cp ${{github.workspace}}/install.sh ${{env.TTK_MODULE}}
+          cp ${{github.workspace}}/uninstall.sh ${{env.TTK_MODULE}}
+          7z a ${{env.TTK_MODULE}}-${{env.TTK_VERSION}}-qmmp-${{matrix.qmmp_version}}-${{matrix.os}}.7z ${{env.TTK_MODULE}}
+        working-directory: ${{runner.workspace}}/usr
+
+      - name: Archive artifacts
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: ${{env.TTK_VERSION}}
+          token: ${{secrets.GITHUB_TOKEN}}
+          generate_release_notes: false
+          files: |
+            ${{runner.workspace}}/${{env.TTK_MODULE}}-${{env.TTK_VERSION}}-qmmp-${{matrix.qmmp_version}}-${{matrix.os}}.7z

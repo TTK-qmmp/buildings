@@ -1,8 +1,12 @@
 # Author: Greedysky <greedysky@163.com>
 
-name: ttk-qmmp
+name: qmmp-based-on-release
 
 on: workflow_call
+
+env:
+  TTK_MODULE: TTKQmmp
+  TTK_VERSION: v1.0.1
 
 jobs:
   build:
@@ -31,7 +35,7 @@ jobs:
           - qt: qt6
             os: ubuntu-22.04
             qt_major: 6
-            qt_version: 6.9.3
+            qt_version: 6.2.4
             qmmp_name: qmmp
             qmmp_module: qmmp
             qmmp_version: 2.3.2
@@ -40,7 +44,7 @@ jobs:
           - qt: qt6
             os: ubuntu-24.04
             qt_major: 6
-            qt_version: 6.9.3
+            qt_version: 6.4.2
             qmmp_name: qmmp
             qmmp_module: qmmp
             qmmp_version: 2.3.2
@@ -64,10 +68,20 @@ jobs:
           7z x thirdParty-libraries.7z
           mkdir install
           mv gcc install
+          # replace libADLMIDI pc
           mv install/gcc/libadlmidi/lib/libADLMIDI_static.a install/gcc/libadlmidi/lib/libADLMIDI.a
+          sed -i "s/TTKMusicPlayer/buildings/g" install/gcc/libadlmidi/lib/pkgconfig/libADLMIDI.pc
+          # replace libbinio pc
           mv install/gcc/libadplug/lib/libbinio_static.a install/gcc/libadplug/lib/libbinio.a
+          sed -i "s/TTKMusicPlayer/buildings/g" install/gcc/libadplug/lib/pkgconfig/libbinio.pc
+          # replace libadplug pc
           mv install/gcc/libadplug/lib/libadplug_static.a install/gcc/libadplug/lib/libadplug.a
+          sed -i "s/TTKMusicPlayer/buildings/g" install/gcc/libadplug/lib/pkgconfig/adplug.pc
+          # replace libopenmpt pc
           mv install/gcc/libopenmpt/lib/libopenmpt_static.a install/gcc/libopenmpt/lib/libopenmpt.a
+          sed -i "s/TTKMusicPlayer/buildings/g" install/gcc/libopenmpt/lib/pkgconfig/libopenmpt.pc
+          # replace liboptimfrog pc
+          sed -i "s/TTKMusicPlayer/buildings/g" install/gcc/liboptimfrog/lib/pkgconfig/optimfrog.pc
         working-directory: ${{runner.workspace}}
 
       - name: Install qmmp library
@@ -77,9 +91,11 @@ jobs:
           zstd -d data.tar.zst
           7z x data.tar
           cd usr/lib/${{matrix.qmmp_name}}
+          # remove old plugins
+          rm -rf plugins
           rm lib${{matrix.qmmp_module}}.so
           ln -s lib${{matrix.qmmp_module}}.so.${{matrix.qmmp_version}} lib${{matrix.qmmp_module}}.so
-          sed -i "s/\/usr/\/home\/runner\/work\/TTKMusicPlayer\/usr/g" pkgconfig/${{matrix.qmmp_module}}.pc
+          sed -i "s/\/usr/\/home\/runner\/work\/buildings\/usr/g" pkgconfig/${{matrix.qmmp_module}}.pc
         working-directory: ${{runner.workspace}}
 
       - name: Clone TTKQmmp modules
@@ -98,3 +114,33 @@ jobs:
           bash build.sh
         working-directory: ${{github.workspace}}/scripts
 
+      - name: Build TTKQmmp packages
+        run: |
+          # clean up directories
+          rm -rf bin include share
+          # clean up
+          cd lib/${{matrix.qmmp_name}}
+          rm libqmmp*
+          rm -rf pkgconfig
+          # add portable binary package
+          cd ${{runner.workspace}}
+          mv usr ${{env.TTK_MODULE}}
+          # add liboptimfrog library
+          mkdir ${{env.TTK_MODULE}}/ext
+          cp install/gcc/liboptimfrog/lib/libOptimFROG.so.0 ${{env.TTK_MODULE}}/ext
+          cp install/gcc/libsunvox/sunvox.so ${{env.TTK_MODULE}}/lib/${{matrix.qmmp_name}}
+          cp -rf /home/runner/work/qmmp-ttk/Visual/sonique/svps/linux_x64/sonique ${{env.TTK_MODULE}}/ext
+          # copy scripts
+          cp ${{github.workspace}}/install.sh ${{env.TTK_MODULE}}
+          cp ${{github.workspace}}/uninstall.sh ${{env.TTK_MODULE}}
+          7z a ${{env.TTK_MODULE}}-${{env.TTK_VERSION}}-qmmp-${{matrix.qmmp_version}}-${{matrix.os}}.7z ${{env.TTK_MODULE}}
+        working-directory: ${{runner.workspace}}/usr
+
+      - name: Archive artifacts
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: ${{env.TTK_VERSION}}
+          token: ${{secrets.GITHUB_TOKEN}}
+          generate_release_notes: false
+          files: |
+            ${{runner.workspace}}/${{env.TTK_MODULE}}-${{env.TTK_VERSION}}-qmmp-${{matrix.qmmp_version}}-${{matrix.os}}.7z

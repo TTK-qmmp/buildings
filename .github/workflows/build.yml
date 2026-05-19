@@ -5,6 +5,10 @@ name: CI-Build
 on: workflow_dispatch
 
 jobs:
-  ubuntu:
-    uses: ./.github/workflows/ubuntu.yml
+  qmmp-develop:
+    uses: ./.github/workflows/develop.yml
+    secrets: inherit
+
+  qmmp-release:
+    uses: ./.github/workflows/release.yml
     secrets: inherit
