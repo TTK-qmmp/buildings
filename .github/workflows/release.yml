@@ -21,7 +21,7 @@ jobs:
             qmmp_name: qmmp-qt5
             qmmp_module: qmmp-1
             qmmp_version: 1.7.11
-            qmmp_deb_path: qmmp-qt5_1.7.11-1ubuntu1~jammy1
+            qmmp_deb_suffix: jammy1
 
           - qt: qt5
             os: ubuntu-24.04
@@ -30,7 +30,7 @@ jobs:
             qmmp_name: qmmp-qt5
             qmmp_module: qmmp-1
             qmmp_version: 1.7.11
-            qmmp_deb_path: qmmp-qt5_1.7.11-1ubuntu1~noble1
+            qmmp_deb_suffix: noble1
 
           - qt: qt6
             os: ubuntu-22.04
@@ -39,7 +39,7 @@ jobs:
             qmmp_name: qmmp
             qmmp_module: qmmp
             qmmp_version: 2.3.3
-            qmmp_deb_path: qmmp_2.3.3-1ubuntu1~jammy1
+            qmmp_deb_suffix: jammy1
 
           - qt: qt6
             os: ubuntu-24.04
@@ -48,7 +48,7 @@ jobs:
             qmmp_name: qmmp
             qmmp_module: qmmp
             qmmp_version: 2.3.3
-            qmmp_deb_path: qmmp_2.3.3-1ubuntu1~noble1
+            qmmp_deb_suffix: noble1
 
     runs-on: ${{matrix.os}}
     steps:
@@ -86,7 +86,7 @@ jobs:
 
       - name: Install qmmp library
         run: |
-          wget https://launchpad.net/~forkotov02/+archive/ubuntu/ppa/+files/${{matrix.qmmp_deb_path}}_amd64.deb -O qmmp_amd64.deb
+          wget https://launchpad.net/~forkotov02/+archive/ubuntu/ppa/+files/${{matrix.qmmp_name}}_${{matrix.qmmp_version}}-1ubuntu1~${{matrix.qmmp_deb_suffix}}_amd64.deb -O qmmp_amd64.deb
           ar x qmmp_amd64.deb
           zstd -d data.tar.zst
           7z x data.tar
