@@ -20,8 +20,8 @@ jobs:
             qt_version: 5.15.2
             qmmp_name: qmmp-qt5
             qmmp_module: qmmp-1
-            qmmp_version: 1.7.10
-            qmmp_deb_path: qmmp-qt5_1.7.10-1ubuntu1~jammy1
+            qmmp_version: 1.7.11
+            qmmp_deb_path: qmmp-qt5_1.7.11-1ubuntu1~jammy1
 
           - qt: qt5
             os: ubuntu-24.04
@@ -29,8 +29,8 @@ jobs:
             qt_version: 5.15.2
             qmmp_name: qmmp-qt5
             qmmp_module: qmmp-1
-            qmmp_version: 1.7.10
-            qmmp_deb_path: qmmp-qt5_1.7.10-1ubuntu1~noble0
+            qmmp_version: 1.7.11
+            qmmp_deb_path: qmmp-qt5_1.7.11-1ubuntu1~noble1
 
           - qt: qt6
             os: ubuntu-22.04
@@ -38,8 +38,8 @@ jobs:
             qt_version: 6.2.4
             qmmp_name: qmmp
             qmmp_module: qmmp
-            qmmp_version: 2.3.2
-            qmmp_deb_path: qmmp_2.3.2-1ubuntu1~jammy1
+            qmmp_version: 2.3.3
+            qmmp_deb_path: qmmp_2.3.3-1ubuntu1~jammy1
 
           - qt: qt6
             os: ubuntu-24.04
@@ -47,8 +47,8 @@ jobs:
             qt_version: 6.4.2
             qmmp_name: qmmp
             qmmp_module: qmmp
-            qmmp_version: 2.3.2
-            qmmp_deb_path: qmmp_2.3.2-1ubuntu1~noble0
+            qmmp_version: 2.3.3
+            qmmp_deb_path: qmmp_2.3.3-1ubuntu1~noble1
 
     runs-on: ${{matrix.os}}
     steps:
