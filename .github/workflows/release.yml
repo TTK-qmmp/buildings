@@ -32,14 +32,23 @@ jobs:
             qmmp_version: 1.7.11
             qmmp_deb_suffix: noble1
 
+          - qt: qt5
+            os: ubuntu-26.04
+            qt_major: 5
+            qt_version: 5.15.2
+            qmmp_name: qmmp-qt5
+            qmmp_module: qmmp-1
+            qmmp_version: 1.7.11
+            qmmp_deb_suffix: resolute1
+
           - qt: qt6
             os: ubuntu-22.04
             qt_major: 6
             qt_version: 6.2.4
             qmmp_name: qmmp
             qmmp_module: qmmp
-            qmmp_version: 2.3.3
-            qmmp_deb_suffix: jammy1
+            qmmp_version: 2.4
+            qmmp_deb_suffix: jammy0
 
           - qt: qt6
             os: ubuntu-24.04
@@ -47,8 +56,17 @@ jobs:
             qt_version: 6.4.2
             qmmp_name: qmmp
             qmmp_module: qmmp
-            qmmp_version: 2.3.3
-            qmmp_deb_suffix: noble1
+            qmmp_version: 2.4
+            qmmp_deb_suffix: noble0
+
+          - qt: qt6
+            os: ubuntu-26.04
+            qt_major: 6
+            qt_version: 6.10.2
+            qmmp_name: qmmp
+            qmmp_module: qmmp
+            qmmp_version: 2.4
+            qmmp_deb_suffix: resolute0
 
     runs-on: ${{matrix.os}}
     steps:
